@@ -43,7 +43,13 @@
       @for (row of result; track $index) {
         <div class="row">
           @for (letter of row; track $index) {
-            <div class="tile">{{ letter }}</div>
+            <div
+              class="tile"
+              [class.t-large]="row.length === 20 || row.length === 19 || row.length === 18 || row.length === 17 || row.length === 16"
+              [class.t-medium]="row.length === 15 || row.length === 14 || row.length === 13 || row.length === 12 || row.length === 11"
+              [class.t-small]="row.length === 10 || row.length === 9 || row.length === 8 || row.length === 7 || row.length === 6">
+              {{ letter }}
+            </div>
           }
         </div>
       }
