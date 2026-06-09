@@ -1,14 +1,14 @@
-<div class="row title">
+<div class="title-row title">
   @for (letter of 'Webbed Words'; track $index) {
-    <div class="tile" [class.empty]="letter === ' '">{{ letter }}</div>
+    <div class="title-tile" [class.empty]="letter === ' '">{{ letter }}</div>
   }
 </div>
 <div class="filters">
   <div class="words">
-    <textarea id="words" rows="5" cols="100" placeholder="Enter a list of words separated by commas..." [(ngModel)]="filter.words"></textarea>
+    <textarea id="words" placeholder="Enter a list of words separated by commas..." [(ngModel)]="filter.words"></textarea>
   </div>
   <div class="number">
-    <label for="max-size">Maximum size of the board (X by X)</label>
+    <label for="max-size">Max size of the board (X by X)</label>
     <select id="max-size" [(ngModel)]="filter.maxSize">
       @for (item of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]; track $index) {
         <option [value]="item">{{ item }}</option>
@@ -16,7 +16,7 @@
     </select>
   </div>
   <div class="number">
-    <label for="max-results">Maximum number of solutions</label>
+    <label for="max-results">Max number of solutions</label>
     <select id="max-results" [(ngModel)]="filter.maxResults">
       @for (item of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]; track $index) {
         <option [value]="item">{{ item }}</option>

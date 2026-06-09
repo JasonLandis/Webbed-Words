@@ -13,7 +13,7 @@ export class AppComponent implements OnInit, OnDestroy {
     words: '',
     maxSize: 15,
     maxResults: 3,
-    shuffleWords: true,
+    shuffleWords: false,
   };
 
   public results: string[][][] = [];
