@@ -10,10 +10,10 @@ import { IFilter } from './app.model';
 })
 export class AppComponent implements OnInit, OnDestroy {
   public filter: IFilter = {
-    words: 'beatles, cream, rascals, stones, doors, supremes',
-    maxSize: 10,
-    maxResults: 1,
-    shuffleWords: false,
+    words: '',
+    maxSize: 15,
+    maxResults: 3,
+    shuffleWords: true,
   };
 
   public results: string[][][] = [];
