@@ -6,11 +6,12 @@
 <div class="filters">
   <div class="words">
     <textarea id="words" placeholder="Enter a list of words separated by commas..." rows="3" spellcheck="false" [(ngModel)]="filter.words"></textarea>
+    <div class="words-entered">Words entered: {{ wordCount }}</div>
   </div>
   <div class="number">
     <label for="max-size">Max size of the board (X by X)</label>
     <select id="max-size" [(ngModel)]="filter.maxSize">
-      @for (item of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 30]; track $index) {
+      @for (item of [5, 10, 15, 20, 25, 30]; track $index) {
         <option [value]="item">{{ item }}</option>
       }
     </select>
@@ -29,7 +30,7 @@
   </div>
 </div>
 <div class="generate">
-  <button (click)="generate()" [disabled]="loading">{{ loading ? 'Loading...' : 'Generate' }}</button>
+  <button (click)="loading ? cancel() : generate()" [class.red]="loading">{{ loading ? 'Cancel' : 'Generate' }}</button>
 </div>
 @if (attempted) {
   <div class="timer">Elapsed time: {{ (elapsedTime / 1000).toFixed(2) }}s</div>
@@ -39,20 +40,26 @@
 }
 <div class="results-container">
   @for (result of results; track $index) {
-    <div class="result">
-      @for (row of result; track $index) {
-        <div class="row">
-          @for (letter of row; track $index) {
-            <div
-              class="tile"
-              [class.t-large]="row.length === 20 || row.length === 19 || row.length === 18 || row.length === 17 || row.length === 16"
-              [class.t-medium]="row.length === 15 || row.length === 14 || row.length === 13 || row.length === 12 || row.length === 11"
-              [class.t-small]="row.length === 10 || row.length === 9 || row.length === 8 || row.length === 7 || row.length === 6">
-              {{ letter }}
-            </div>
-          }
-        </div>
-      }
+    <div>
+      <div class="grid-size">{{ result.length }} x {{ result[0].length }}</div>
+      <div class="result">
+        @for (row of result; track $index) {
+          <div class="row">
+            @for (letter of row; track $index) {
+              <div
+                class="tile"
+                [class.t-xxlarge]="row.length >= 26"
+                [class.t-xlarge]="row.length >= 21 && row.length <= 25"
+                [class.t-large]="row.length >= 16 && row.length <= 20"
+                [class.t-medium]="row.length >= 11 && row.length <= 15"
+                [class.t-small]="row.length >= 6 && row.length <= 10"
+                [class.t-xsmall]="row.length <= 5">
+                {{ letter }}
+              </div>
+            }
+          </div>
+        }
+      </div>
     </div>
   }
 </div>

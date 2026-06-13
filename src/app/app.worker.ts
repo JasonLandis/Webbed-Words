@@ -10,8 +10,9 @@ function algorithm(filter: IFilter): string[][][] {
   if (filter.words.length === 0) return [];
 
   const words = filter.words
-    .replace(/\s+/g, '')
     .split(',')
+    .map(word => word.trim())
+    .filter(word => word.length > 0)
     .map(word => word.toUpperCase())
     .sort((a, b) => b.length - a.length);
 

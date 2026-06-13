@@ -6,14 +6,14 @@ import { IFilter } from './app.model';
   selector: 'app-root',
   imports: [FormsModule],
   templateUrl: './app.component.html',
-  styleUrl: './app.component.scss',
+  styleUrls: ['./app.component.scss', './app.gridmedia.scss'],
 })
 export class AppComponent implements OnInit, OnDestroy {
   public filter: IFilter = {
     words: '',
     maxSize: 15,
-    maxResults: 3,
-    shuffleWords: true,
+    maxResults: 1,
+    shuffleWords: false,
   };
 
   public results: string[][][] = [];
@@ -28,20 +28,12 @@ export class AppComponent implements OnInit, OnDestroy {
   private worker?: Worker;
 
   public ngOnInit(): void {
-    this.worker = new Worker(new URL('./app.worker', import.meta.url), { type: 'module' });
-
-    this.worker.onmessage = ({ data }) => {
-      this.results = data;
-
-      clearInterval(this.timerId);
-
-      this.elapsedTime = performance.now() - this.startTime;
-      this.loading = false;
-    };
+    this.initWorker();
   }
 
   public ngOnDestroy(): void {
     this.worker?.terminate();
+    this.clearTimer();
   }
 
   public generate(): void {
@@ -56,5 +48,38 @@ export class AppComponent implements OnInit, OnDestroy {
     }, 10);
 
     this.worker?.postMessage(this.filter);
+  }
+
+  public cancel(): void {
+    if (!this.loading) return;
+    this.worker?.terminate();
+    this.clearTimer();
+    this.loading = false;
+    this.initWorker();
+  }
+
+  private initWorker(): void {
+    this.worker = new Worker(new URL('./app.worker', import.meta.url), { type: 'module' });
+
+    this.worker.onmessage = ({ data }) => {
+      this.results = data;
+      this.clearTimer();
+      this.elapsedTime = performance.now() - this.startTime;
+      this.loading = false;
+    };
+  }
+
+  private clearTimer(): void {
+    if (this.timerId) {
+      clearInterval(this.timerId);
+      this.timerId = undefined;
+    }
+  }
+
+  get wordCount(): number {
+    return this.filter.words
+      .split(',')
+      .map(word => word.trim())
+      .filter(word => word.length > 0).length;
   }
 }
