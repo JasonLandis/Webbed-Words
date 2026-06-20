@@ -58,6 +58,10 @@ export class AppComponent implements OnInit, OnDestroy {
     this.initWorker();
   }
 
+  public toggleMirror(index: number): void {
+    this.results[index] = this.results[index][0].map((_, colIndex) => this.results[index].map(row => row[colIndex]));
+  }
+
   private initWorker(): void {
     this.worker = new Worker(new URL('./app.worker', import.meta.url), { type: 'module' });
 

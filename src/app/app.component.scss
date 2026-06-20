@@ -243,6 +243,22 @@ input {
   margin-bottom: 10px;
 }
 
+.toggle-mirror {
+  all: unset;
+  cursor: pointer;
+  margin-top: 5px;
+  text-align: center;
+  width: 100%;
+
+  &:hover {
+    opacity: 0.9;
+  }
+
+  &:active {
+    opacity: 0.8;
+  }
+}
+
 .empty {
   opacity: 0;
 }

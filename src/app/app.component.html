@@ -39,7 +39,7 @@
   <div class="no-results">No results found</div>
 }
 <div class="results-container">
-  @for (result of results; track $index) {
+  @for (result of results; track $index; let i = $index) {
     <div>
       <div class="grid-size">{{ result.length }} x {{ result[0].length }}</div>
       <div class="result">
@@ -60,6 +60,7 @@
           </div>
         }
       </div>
+      <button class="toggle-mirror" (click)="toggleMirror(i)">Toggle mirror</button>
     </div>
   }
 </div>

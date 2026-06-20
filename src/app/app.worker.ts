@@ -137,6 +137,8 @@ function algorithm(filter: IFilter): string[][][] {
       return false;
     }
 
+    let twoInARow = false;
+
     // Checks each cell that would occupy a letter of the new word and determines if it will fit
     for (let i = 0; i < word.length; i++) {
       const row = vertical ? startRow + i : startRow;
@@ -150,9 +152,14 @@ function algorithm(filter: IFilter): string[][][] {
 
       // Continues to the next letter if there is an intersection
       const isIntersection = existing === word[i];
-      if (isIntersection) {
+      if (isIntersection && twoInARow === false) {
         intersections++;
+        twoInARow = true;
         continue;
+      } else if (isIntersection && twoInARow === true) {
+        return false;
+      } else {
+        twoInARow = false;
       }
 
       newTiles++;
