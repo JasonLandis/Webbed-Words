@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { IFilter } from './app.model';
+import { IFilter, IWorkerMessage } from './app.model';
 
 @Component({
   selector: 'app-root',
@@ -21,6 +21,9 @@ export class AppComponent implements OnInit, OnDestroy {
   public loading = false;
   public attempted = false;
 
+  public bestPlaced = 0;
+  public totalWords = 0;
+
   public elapsedTime = 0;
   private timerId?: number;
   private startTime = 0;
@@ -40,6 +43,8 @@ export class AppComponent implements OnInit, OnDestroy {
     this.attempted = true;
     this.loading = true;
     this.results = [];
+    this.bestPlaced = 0;
+    this.totalWords = 0;
 
     this.startTime = performance.now();
 
@@ -65,8 +70,14 @@ export class AppComponent implements OnInit, OnDestroy {
   private initWorker(): void {
     this.worker = new Worker(new URL('./app.worker', import.meta.url), { type: 'module' });
 
-    this.worker.onmessage = ({ data }) => {
-      this.results = data;
+    this.worker.onmessage = ({ data }: MessageEvent<IWorkerMessage>) => {
+      if (data.type === 'progress') {
+        this.bestPlaced = data.placed;
+        this.totalWords = data.total;
+        return;
+      }
+
+      this.results = data.results;
       this.clearTimer();
       this.elapsedTime = performance.now() - this.startTime;
       this.loading = false;
