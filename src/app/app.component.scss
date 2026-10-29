@@ -178,7 +178,8 @@ input {
   background-color: rgb(255, 195, 195) !important;
 }
 
-.timer {
+.timer,
+.best-placed {
   text-align: center;
   font-size: 18px;
   margin-top: 20px;
@@ -190,6 +191,10 @@ input {
   @media (max-width: 400px) {
     font-size: 13px !important;
   }
+}
+
+.best-placed {
+  margin-top: 8px;
 }
 
 .no-results {

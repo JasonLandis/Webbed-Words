@@ -1,10 +1,14 @@
 /// <reference lib="webworker" />
-import { IFilter } from './app.model';
+import { IFilter, IWorkerMessage } from './app.model';
 
 addEventListener('message', ({ data }) => {
-  const result = algorithm(data);
-  postMessage(result);
+  const results = algorithm(data);
+  send({ type: 'done', results });
 });
+
+function send(message: IWorkerMessage): void {
+  postMessage(message);
+}
 
 function algorithm(filter: IFilter): string[][][] {
   const words = filter.words
@@ -293,8 +297,17 @@ function algorithm(filter: IFilter): string[][][] {
     wordsLeft[index] = wordId;
   }
 
+  // The most words placed on the board in any state so far, reported to the page whenever it increases
+  let bestPlaced = 1;
+
   function search(wordsLeft: number[], wordsHashHi: number, wordsHashLo: number) {
     if (results.length >= filter.maxResults) return;
+
+    const placed = words.length - wordsLeft.length;
+    if (placed > bestPlaced) {
+      bestPlaced = placed;
+      send({ type: 'progress', placed, total: words.length });
+    }
 
     // Checks if the current state has already been fully explored and returns if so
     const stateKey = `${boardHashHi ^ wordsHashHi}:${boardHashLo ^ wordsHashLo}`;
@@ -371,6 +384,7 @@ function algorithm(filter: IFilter): string[][][] {
   for (let i = 0; i < firstWord.length; i++) {
     setCell(0, i, firstWord.charCodeAt(i));
   }
+  send({ type: 'progress', placed: 1, total: words.length });
 
   // Search with every word except the first remaining, by index
   const remaining = words.map((_, i) => i).slice(1);

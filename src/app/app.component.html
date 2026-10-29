@@ -34,6 +34,9 @@
 </div>
 @if (attempted) {
   <div class="timer">Elapsed time: {{ (elapsedTime / 1000).toFixed(2) }}s</div>
+  @if (totalWords > 0) {
+    <div class="best-placed">Most words placed: {{ bestPlaced }}/{{ totalWords }}</div>
+  }
 }
 @if (results.length === 0 && !loading && attempted) {
   <div class="no-results">No results found</div>
