@@ -7,8 +7,6 @@ addEventListener('message', ({ data }) => {
 });
 
 function algorithm(filter: IFilter): string[][][] {
-  if (filter.words.length === 0) return [];
-
   const words = filter.words
     .split(',')
     .map(word => word.trim())
@@ -16,44 +14,80 @@ function algorithm(filter: IFilter): string[][][] {
     .map(word => word.toUpperCase())
     .sort((a, b) => b.length - a.length);
 
-  if (filter.shuffleWords) words.sort(() => Math.random() - 0.5);
+  // Returns if there are no words once blank entries are removed, such as for an input of only commas or spaces
+  if (words.length === 0) return [];
 
-  const board = new Map<number, string>();
+  // Shuffles the words with a Fisher-Yates shuffle so every order is equally likely
+  if (filter.shuffleWords) {
+    for (let i = words.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [words[i], words[j]] = [words[j], words[i]];
+    }
+  }
+
+  // The board is a flat grid of char codes (0 for empty) centered on the first word
+  // It is padded so that every cell read while testing a placement stays inside the grid
+  const maxSize = Number(filter.maxSize);
+  const maxWordLength = Math.max(...words.map(word => word.length));
+  const offset = Math.max(maxSize, words[0].length) + maxWordLength + 2;
+  const side = offset * 2 + 1;
+  const board = new Uint16Array(side * side);
   const results: string[][][] = [];
 
   let currentBounds = { minRow: 0, maxRow: 0, minCol: 0, maxCol: words[0].length - 1 }; // Tracks the bounds of the board throughout the algorithm
-  const seen = new Set<string>(); // Tracks solution boards that have already been recorded
-  const deadStates = new Set<string>(); // Tracks dead board states that do not lead to a solution
-  const letterIndex = new Map<string, Set<number>>(); // Stores information mapping a letter to every position on the board that is that letter
+  const exploredStates = new Set<string>(); // Tracks states (board plus remaining words) that have been fully explored, including recorded solutions
+  const letterIndex = new Map<number, Set<number>>(); // Stores information mapping a letter's char code to every cell on the board that is that letter
 
-  // Packs a row and col into a single 32-bit integer and return it
-  function hashCoord(row: number, col: number): number {
-    return (row << 16) | (col & 0xffff);
+  // 64-bit Zobrist-style hash of the board split into two 32-bit halves, updated incrementally as cells are set and deleted
+  let boardHashHi = 0;
+  let boardHashLo = 0;
+
+  // Random 64-bit values per word index, XORed together to hash the set of remaining words
+  const wordHashHi = words.map(() => (Math.random() * 0x100000000) | 0);
+  const wordHashLo = words.map(() => (Math.random() * 0x100000000) | 0);
+
+  // Unique letter char codes of each word, and whether each pair of words shares a letter
+  const wordLetters = words.map(word => [...new Set(Array.from(word, (_, i) => word.charCodeAt(i)))]);
+  const sharesLetter = words.map((_, i) => words.map((_, j) => i !== j && wordLetters[i].some(code => wordLetters[j].includes(code))));
+
+  // Scrambles a 32-bit integer (murmur3 finalizer) and returns it
+  function mix32(h: number): number {
+    h ^= h >>> 16;
+    h = Math.imul(h, 0x85ebca6b);
+    h ^= h >>> 13;
+    h = Math.imul(h, 0xc2b2ae35);
+    h ^= h >>> 16;
+    return h;
   }
 
-  // Unpacks the 32-bit integer back into [row, col] and return it
-  function unhashCoord(hash: number): [number, number] {
-    const row = hash >> 16;
-    const col = (hash << 16) >> 16;
-    return [row, col];
+  // Toggles a letter at a cell in or out of the board hash
+  function toggleBoardHash(cell: number, code: number): void {
+    boardHashHi ^= mix32(mix32(cell ^ 0x9e3779b9) + code);
+    boardHashLo ^= mix32(mix32(cell ^ 0x7f4a7c15) + code);
   }
 
-  // Gets the letter of a position on the board and return it
-  function getCell(row: number, col: number): string | undefined {
-    return board.get(hashCoord(row, col));
+  // Converts a row and col into an index into the board grid and return it
+  function cellIndex(row: number, col: number): number {
+    return (row + offset) * side + col + offset;
+  }
+
+  // Gets the char code of the letter at a position on the board, or 0 if empty, and return it
+  function getCell(row: number, col: number): number {
+    return board[cellIndex(row, col)];
   }
 
   // Sets a letter in a position on the board, add the position to the letter index, and adjust the bounds of the board
-  function setCell(row: number, col: number, letter: string): void {
-    const hash = hashCoord(row, col);
-    board.set(hash, letter);
+  function setCell(row: number, col: number, code: number): void {
+    const cell = cellIndex(row, col);
+    board[cell] = code;
+    toggleBoardHash(cell, code);
 
-    let positions = letterIndex.get(letter);
+    let positions = letterIndex.get(code);
     if (!positions) {
       positions = new Set();
-      letterIndex.set(letter, positions);
+      letterIndex.set(code, positions);
     }
-    positions.add(hash);
+    positions.add(cell);
 
     currentBounds.minRow = Math.min(currentBounds.minRow, row);
     currentBounds.maxRow = Math.max(currentBounds.maxRow, row);
@@ -61,67 +95,40 @@ function algorithm(filter: IFilter): string[][][] {
     currentBounds.maxCol = Math.max(currentBounds.maxCol, col);
   }
 
-  // Deletes a letter given a position on the board, remove the position from the letter index, and adjust the bounds of the board if needed
-  function deleteCell(row: number, col: number) {
-    const hash = hashCoord(row, col);
-    const letter = board.get(hash);
+  // Deletes a letter given a cell on the board and remove the cell from the letter index
+  // Bounds are not adjusted here; callers restore the bounds saved before the placement
+  function deleteCell(cell: number) {
+    const code = board[cell];
 
-    if (letter) {
-      const positions = letterIndex.get(letter);
+    if (code) {
+      toggleBoardHash(cell, code);
+      const positions = letterIndex.get(code);
       if (positions) {
-        positions.delete(hash);
+        positions.delete(cell);
         if (positions.size === 0) {
-          letterIndex.delete(letter);
+          letterIndex.delete(code);
         }
       }
     }
-    board.delete(hash);
-
-    if (row === currentBounds.minRow || row === currentBounds.maxRow || col === currentBounds.minCol || col === currentBounds.maxCol) {
-      if (board.size === 0) {
-        currentBounds = { minRow: 0, maxRow: 0, minCol: 0, maxCol: 0 };
-        return;
-      }
-
-      let minRow = Infinity;
-      let maxRow = -Infinity;
-      let minCol = Infinity;
-      let maxCol = -Infinity;
-
-      for (const hash of board.keys()) {
-        const [r, c] = unhashCoord(hash);
-        if (r < minRow) minRow = r;
-        if (r > maxRow) maxRow = r;
-        if (c < minCol) minCol = c;
-        if (c > maxCol) maxCol = c;
-      }
-
-      currentBounds = { minRow, maxRow, minCol, maxCol };
-    }
+    board[cell] = 0;
   }
 
   // Determines the bounds of the board after the given word is added and returns whether or not the word will fit
+  // Only the first and last letters of the word can extend the bounds
   function placementFits(word: string, startRow: number, startCol: number, vertical: boolean): boolean {
-    let { minRow, maxRow, minCol, maxCol } = currentBounds;
+    const endRow = vertical ? startRow + word.length - 1 : startRow;
+    const endCol = vertical ? startCol : startCol + word.length - 1;
 
-    for (let i = 0; i < word.length; i++) {
-      const row = vertical ? startRow + i : startRow;
-      const col = vertical ? startCol : startCol + i;
+    const width = Math.max(currentBounds.maxCol, endCol) - Math.min(currentBounds.minCol, startCol) + 1;
+    const height = Math.max(currentBounds.maxRow, endRow) - Math.min(currentBounds.minRow, startRow) + 1;
 
-      minRow = Math.min(minRow, row);
-      maxRow = Math.max(maxRow, row);
-      minCol = Math.min(minCol, col);
-      maxCol = Math.max(maxCol, col);
-    }
-
-    const width = maxCol - minCol + 1;
-    const height = maxRow - minRow + 1;
-
-    return width <= filter.maxSize && height <= filter.maxSize;
+    return width <= maxSize && height <= maxSize;
   }
 
   // Determines if a word can be placed on the board without creating any new words
-  function canPlaceWord(word: string, startRow: number, startCol: number, vertical: boolean): boolean {
+  // The anchor is the index of the letter the placement was generated from; placements that intersect the board before it are rejected
+  // since the same placement is also generated from that earlier intersection
+  function canPlaceWord(word: string, startRow: number, startCol: number, vertical: boolean, anchor: number): boolean {
     let intersections = 0;
     let newTiles = 0;
 
@@ -144,14 +151,20 @@ function algorithm(filter: IFilter): string[][][] {
       const row = vertical ? startRow + i : startRow;
       const col = vertical ? startCol : startCol + i;
       const existing = getCell(row, col);
+      const code = word.charCodeAt(i);
 
       // Return if the cell contains a letter that is not the correct letter
-      if (existing && existing !== word[i]) {
+      if (existing && existing !== code) {
+        return false;
+      }
+
+      // Return if this placement was already tried from an earlier intersection
+      if (existing && i < anchor) {
         return false;
       }
 
       // Continues to the next letter if there is an intersection
-      const isIntersection = existing === word[i];
+      const isIntersection = existing === code;
       if (isIntersection && twoInARow === false) {
         intersections++;
         twoInARow = true;
@@ -177,114 +190,171 @@ function algorithm(filter: IFilter): string[][][] {
     return intersections > 0 && newTiles > 0;
   }
 
-  // Places a word on the board and returns the positions on the board that occupy the new letters
-  function placeWord(word: string, startRow: number, startCol: number, vertical: boolean): [number, number][] {
-    const addedCells: [number, number][] = [];
+  // Stack of the cells added by every placement currently on the board, so placements can be undone without allocating
+  const addedCells: number[] = [];
+
+  // Places a word on the board, pushes the cells of the new letters onto the added cells stack, and returns how many were added
+  function placeWord(word: string, startRow: number, startCol: number, vertical: boolean): number {
+    let added = 0;
 
     for (let i = 0; i < word.length; i++) {
       const row = vertical ? startRow + i : startRow;
       const col = vertical ? startCol : startCol + i;
+      const cell = cellIndex(row, col);
 
-      if (!getCell(row, col)) {
-        setCell(row, col, word[i]);
-        addedCells.push([row, col]);
+      if (!board[cell]) {
+        setCell(row, col, word.charCodeAt(i));
+        addedCells.push(cell);
+        added++;
       }
     }
 
-    return addedCells;
+    return added;
   }
 
-  // Removes from the board the given positions
-  function undoPlacement(addedCells: [number, number][]) {
-    for (const [row, col] of addedCells) {
-      deleteCell(row, col);
+  // Removes from the board the given number of most recently added cells
+  function undoPlacement(count: number) {
+    for (let i = 0; i < count; i++) {
+      deleteCell(addedCells.pop()!);
     }
   }
 
   // Returns a matrix given the current state of the board
   function boardToMatrix(): string[][] {
     const { minRow, maxRow, minCol, maxCol } = currentBounds;
-    const matrix = Array.from({ length: maxRow - minRow + 1 }, () => Array(maxCol - minCol + 1).fill(' '));
+    const matrix: string[][] = [];
 
-    for (const [hash, letter] of board.entries()) {
-      const [row, col] = unhashCoord(hash);
-      matrix[row - minRow][col - minCol] = letter;
+    for (let row = minRow; row <= maxRow; row++) {
+      const line: string[] = [];
+      for (let col = minCol; col <= maxCol; col++) {
+        const code = getCell(row, col);
+        line.push(code ? String.fromCharCode(code) : ' ');
+      }
+      matrix.push(line);
     }
 
     return matrix;
   }
 
-  // Converts the state of the board to a string in sorted order
-  function serializeBoard(): string {
-    const sortedHashes = [...board.keys()].sort((a, b) => a - b);
-    let result = '';
+  // Scratch flags for allWordsReachable, indexed by word, cleared after every call
+  const reachedFlags = new Uint8Array(words.length);
 
-    for (let i = 0; i < sortedHashes.length; i++) {
-      const hash = sortedHashes[i];
-      result += `${hash}:${board.get(hash)}|`;
+  // Returns whether every remaining word can still be placed, either by sharing a letter with the board or with another reachable remaining word
+  function allWordsReachable(wordsLeft: number[]): boolean {
+    let reachedCount = 0;
+
+    // Marks the words that share a letter with the board
+    for (const id of wordsLeft) {
+      for (const code of wordLetters[id]) {
+        if (letterIndex.has(code)) {
+          reachedFlags[id] = 1;
+          reachedCount++;
+          break;
+        }
+      }
     }
 
-    return result;
+    // Repeatedly marks the words that share a letter with a marked word until nothing changes
+    let changed = reachedCount > 0;
+    while (changed && reachedCount < wordsLeft.length) {
+      changed = false;
+      for (const id of wordsLeft) {
+        if (reachedFlags[id]) continue;
+        for (const other of wordsLeft) {
+          if (reachedFlags[other] && sharesLetter[other][id]) {
+            reachedFlags[id] = 1;
+            reachedCount++;
+            changed = true;
+            break;
+          }
+        }
+      }
+    }
+
+    for (const id of wordsLeft) reachedFlags[id] = 0;
+
+    return reachedCount === wordsLeft.length;
   }
 
-  function search(wordsLeft: string[]) {
+  // Removes the word at the given index of the array, shifting later words down
+  function removeWordAt(wordsLeft: number[], index: number) {
+    for (let i = index; i < wordsLeft.length - 1; i++) {
+      wordsLeft[i] = wordsLeft[i + 1];
+    }
+    wordsLeft.pop();
+  }
+
+  // Inserts a word at the given index of the array, shifting later words up
+  function insertWordAt(wordsLeft: number[], index: number, wordId: number) {
+    wordsLeft.push(wordId);
+    for (let i = wordsLeft.length - 1; i > index; i--) {
+      wordsLeft[i] = wordsLeft[i - 1];
+    }
+    wordsLeft[index] = wordId;
+  }
+
+  function search(wordsLeft: number[], wordsHashHi: number, wordsHashLo: number) {
     if (results.length >= filter.maxResults) return;
 
-    // Checks if the current state of the board has already been determined to be a dead state and returns if so
-    const stateKey = serializeBoard() + '#' + [...wordsLeft].sort().join(',');
-    if (deadStates.has(stateKey)) return;
+    // Checks if the current state has already been fully explored and returns if so
+    const stateKey = `${boardHashHi ^ wordsHashHi}:${boardHashLo ^ wordsHashLo}`;
+    if (exploredStates.has(stateKey)) return;
 
-    let foundSolution = false;
-
-    // If all of the words have been used, check to see if the same solution was already added and push the solution to the results if it is new
+    // If all of the words have been used, push the solution to the results
+    // The words hash is 0 here, so the state key identifies the board alone and repeated solutions are caught by the check above
     if (wordsLeft.length === 0) {
-      const signature = serializeBoard();
+      exploredStates.add(stateKey);
+      results.push(boardToMatrix());
+      return;
+    }
 
-      if (!seen.has(signature)) {
-        seen.add(signature);
-        results.push(boardToMatrix());
-
-        foundSolution = true;
-      }
-
+    // Returns early if some remaining word can never connect to the board
+    if (!allWordsReachable(wordsLeft)) {
+      exploredStates.add(stateKey);
       return;
     }
 
     // Loops through the remaining words in the array
     for (let wordIndex = 0; wordIndex < wordsLeft.length; wordIndex++) {
-      const word = wordsLeft[wordIndex];
+      const wordId = wordsLeft[wordIndex];
+      const word = words[wordId];
 
       // Loops through the letters in a word
       for (let letterIndexInWord = 0; letterIndexInWord < word.length; letterIndexInWord++) {
         // Gets the positions of every place on the board with the current letter and continues if one is not found
-        const matchingPositions = letterIndex.get(word[letterIndexInWord]);
+        const matchingPositions = letterIndex.get(word.charCodeAt(letterIndexInWord));
         if (!matchingPositions) continue;
 
         // Loops through every possible position to place the word
-        for (const hash of matchingPositions) {
-          const [row, col] = unhashCoord(hash);
-          const letterIndex = letterIndexInWord;
+        for (const cell of matchingPositions) {
+          const row = Math.floor(cell / side) - offset;
+          const col = (cell % side) - offset;
 
-          // Vertical and horizontal placement
-          const placements = [
-            { vertical: true, startRow: row - letterIndex, startCol: col },
-            { vertical: false, startRow: row, startCol: col - letterIndex },
-          ];
+          // Attempts to place the word vertically and then horizontally through this position
+          for (let direction = 0; direction < 2; direction++) {
+            const vertical = direction === 0;
+            const startRow = vertical ? row - letterIndexInWord : row;
+            const startCol = vertical ? col : col - letterIndexInWord;
 
-          // Attempts to place the word in every position
-          for (const placement of placements) {
-            if (!canPlaceWord(word, placement.startRow, placement.startCol, placement.vertical)) continue;
-            if (!placementFits(word, placement.startRow, placement.startCol, placement.vertical)) continue;
+            if (!placementFits(word, startRow, startCol, vertical)) continue;
+            if (!canPlaceWord(word, startRow, startCol, vertical, letterIndexInWord)) continue;
 
-            // Places the word and returns the cells in case the letters need to be removed later
-            const addedCells = placeWord(word, placement.startRow, placement.startCol, placement.vertical);
+            // Saves the bounds so they can be restored after backtracking instead of being recomputed
+            const { minRow, maxRow, minCol, maxCol } = currentBounds;
 
-            const nextWords = [...wordsLeft];
-            nextWords.splice(wordIndex, 1);
+            // Places the word and returns the number of new letters in case they need to be removed later
+            const added = placeWord(word, startRow, startCol, vertical);
 
-            search(nextWords);
+            // Removes the word from the remaining words in place, keeping their order, and restores it after searching
+            removeWordAt(wordsLeft, wordIndex);
+            search(wordsLeft, wordsHashHi ^ wordHashHi[wordId], wordsHashLo ^ wordHashLo[wordId]);
+            insertWordAt(wordsLeft, wordIndex, wordId);
 
-            undoPlacement(addedCells);
+            undoPlacement(added);
+            currentBounds.minRow = minRow;
+            currentBounds.maxRow = maxRow;
+            currentBounds.minCol = minCol;
+            currentBounds.maxCol = maxCol;
 
             if (results.length >= filter.maxResults) return;
           }
@@ -292,19 +362,26 @@ function algorithm(filter: IFilter): string[][][] {
       }
     }
 
-    // Records that the current state is a dead one and will not lead to any results
-    if (!foundSolution) {
-      deadStates.add(stateKey);
-    }
+    // Records that the current state has been fully explored, so any solutions it leads to are already in the results
+    exploredStates.add(stateKey);
   }
 
   // Place the first word in the list horizontally
   const firstWord = words[0];
   for (let i = 0; i < firstWord.length; i++) {
-    setCell(0, i, firstWord[i]);
+    setCell(0, i, firstWord.charCodeAt(i));
   }
 
-  search(words.slice(1));
+  // Search with every word except the first remaining, by index
+  const remaining = words.map((_, i) => i).slice(1);
+  let remainingHashHi = 0;
+  let remainingHashLo = 0;
+  for (const i of remaining) {
+    remainingHashHi ^= wordHashHi[i];
+    remainingHashLo ^= wordHashLo[i];
+  }
+
+  search(remaining, remainingHashHi, remainingHashLo);
 
   return results;
 }
