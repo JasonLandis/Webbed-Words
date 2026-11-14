@@ -80,6 +80,58 @@ export class AppComponent implements OnInit, OnDestroy {
     this.result = board[0].map((_, colIndex) => board.map(row => row[colIndex]));
   }
 
+  // Draws the board onto a canvas in the page's colors and downloads it as a PNG
+  public exportPng(): void {
+    const board = this.result;
+    if (!board) return;
+
+    const tileSize = 60;
+    const gap = 6;
+    const padding = 20;
+    const scale = 2; // Draws at double resolution so the image stays sharp
+
+    const rows = board.length;
+    const cols = board[0].length;
+    const width = padding * 2 + cols * tileSize + (cols - 1) * gap;
+    const height = padding * 2 + rows * tileSize + (rows - 1) * gap;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = width * scale;
+    canvas.height = height * scale;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.scale(scale, scale);
+
+    ctx.fillStyle = '#3a69a2';
+    ctx.fillRect(0, 0, width, height);
+
+    ctx.font = `bold 30px 'SN Pro', sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    board.forEach((row, r) => {
+      row.forEach((letter, c) => {
+        const x = padding + c * (tileSize + gap);
+        const y = padding + r * (tileSize + gap);
+
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.roundRect(x, y, tileSize, tileSize, 4);
+        ctx.fill();
+
+        if (letter.trim()) {
+          ctx.fillStyle = '#000000';
+          ctx.fillText(letter, x + tileSize / 2, y + tileSize / 2);
+        }
+      });
+    });
+
+    const link = document.createElement('a');
+    link.download = `webbed-words-${rows}x${cols}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  }
+
   private initWorker(): void {
     this.worker = new Worker(new URL('./app.worker', import.meta.url), { type: 'module' });
 

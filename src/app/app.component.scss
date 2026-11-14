@@ -265,12 +265,17 @@ input {
   margin-bottom: 10px;
 }
 
-.toggle-mirror {
+.board-actions {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.board-button {
   @include button;
 
   & {
-    display: block;
-    margin: 0 auto 12px;
     padding: 6px 10px;
     border-width: 2px;
     font-size: 14px;
