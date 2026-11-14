@@ -10,10 +10,10 @@ import { IFilter, IWorkerMessage } from './app.model';
 })
 export class AppComponent implements OnInit, OnDestroy {
   public filter: IFilter = {
-    words: '',
+    words: 'enter, your, own, list, of, comma, separated, words, here, and, hit, generate',
     maxSize: 15,
     maxResults: 1,
-    shuffleWords: false,
+    shuffleWords: true,
   };
 
   public results: string[][][] = [];
