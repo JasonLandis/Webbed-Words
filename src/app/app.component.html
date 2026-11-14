@@ -73,20 +73,11 @@
         <button class="board-button" (click)="toggleMirror()">Toggle mirror</button>
         <button class="board-button" (click)="exportPng()">Export PNG</button>
       </div>
-      <div class="result">
+      <div class="result" [style.--cols]="result[0].length">
         @for (row of result; track $index) {
           <div class="row">
             @for (letter of row; track $index) {
-              <div
-                class="tile"
-                [class.t-xxlarge]="row.length >= 26"
-                [class.t-xlarge]="row.length >= 21 && row.length <= 25"
-                [class.t-large]="row.length >= 16 && row.length <= 20"
-                [class.t-medium]="row.length >= 11 && row.length <= 15"
-                [class.t-small]="row.length >= 6 && row.length <= 10"
-                [class.t-xsmall]="row.length <= 5">
-                {{ letter }}
-              </div>
+              <div class="tile">{{ letter }}</div>
             }
           </div>
         }

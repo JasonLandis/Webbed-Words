@@ -6,7 +6,7 @@ import { IFilter, IWorkerMessage } from './app.model';
   selector: 'app-root',
   imports: [FormsModule],
   templateUrl: './app.component.html',
-  styleUrls: ['./app.component.scss', './app.gridmedia.scss'],
+  styleUrl: './app.component.scss',
 })
 export class AppComponent implements OnInit, OnDestroy {
   public filter: IFilter = {

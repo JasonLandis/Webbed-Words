@@ -228,6 +228,7 @@ input {
 }
 
 .results-container {
+  container-type: inline-size;
   display: flex;
   flex-wrap: wrap;
   gap: 30px;
@@ -239,6 +240,11 @@ input {
 .result {
   display: flex;
   flex-direction: column;
+
+  // A cell is a tile plus its margins. Cells split the container width evenly
+  // across --cols (set from the template), capped at 66px (60px tile + 2 × 3px).
+  --cell: min(66px, 100cqi / var(--cols));
+  --tile: calc(var(--cell) * 0.91);
 }
 
 .row {
@@ -246,16 +252,17 @@ input {
 }
 
 .tile {
-  width: 60px;
-  height: 60px;
+  width: var(--tile);
+  height: var(--tile);
+  margin: calc(var(--cell) * 0.045);
   background-color: #ffffff;
-  border-radius: 4px;
+  border-radius: clamp(1px, var(--tile) * 0.15, 4px);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 30px;
+  // 30px at full size; proportionally larger on small tiles so letters stay legible.
+  font-size: min(var(--tile) * 0.4 + 6px, var(--tile) * 0.85);
   font-weight: bold;
-  margin: 3px;
   color: black;
 }
 
