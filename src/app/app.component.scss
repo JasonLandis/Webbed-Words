@@ -1,9 +1,25 @@
+// Base text size for the component. Everything below is sized in em off this,
+// so text, padding and controls all shrink together and keep their proportions.
+:host {
+  display: block;
+  font-size: 16px;
+
+  @media (max-width: 500px) {
+    font-size: 15px;
+  }
+
+  @media (max-width: 400px) {
+    font-size: 13px;
+  }
+}
+
 @mixin button {
   all: unset;
   cursor: pointer;
   background-color: #ffffff;
-  padding: 10px 15px;
-  border-radius: 5px;
+  font-size: 1em;
+  padding: 0.625em 0.9375em;
+  border-radius: 0.3125em;
   font-weight: bold;
   border: 3px solid black;
   color: black;
@@ -17,13 +33,7 @@
   }
 
   @media (max-width: 500px) {
-    font-size: 15px !important;
-    border: 2px solid black;
-    padding: 8px 11px;
-  }
-
-  @media (max-width: 400px) {
-    font-size: 13px !important;
+    border-width: 2px;
   }
 }
 
@@ -34,61 +44,48 @@
 }
 
 .title-row {
+  // Only the tile size changes per breakpoint; gap, font and corners are derived
+  // from it so the title keeps its 50px proportions (6px gap, 30px font, 4px radius).
+  --t: 50px;
   display: flex;
-  gap: 6px;
+  gap: calc(var(--t) * 0.12);
+
+  @media (max-width: 750px) {
+    --t: 40px;
+  }
+
+  @media (max-width: 600px) {
+    --t: 30px;
+  }
 
   @media (max-width: 500px) {
-    gap: 4px;
+    --t: 25px;
+  }
+
+  @media (max-width: 375px) {
+    --t: 23px;
+  }
+
+  @media (max-width: 350px) {
+    --t: 21px;
+  }
+
+  @media (max-width: 325px) {
+    --t: 19px;
   }
 }
 
 .title-tile {
-  width: 50px;
-  height: 50px;
+  width: var(--t);
+  height: var(--t);
   background-color: #ffffff;
-  border-radius: 4px;
+  border-radius: calc(var(--t) * 0.08);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 30px;
+  font-size: calc(var(--t) * 0.6);
   font-weight: bold;
   color: black;
-
-  @media (max-width: 750px) {
-    width: 40px;
-    height: 40px;
-    font-size: 25px;
-  }
-
-  @media (max-width: 600px) {
-    width: 30px;
-    height: 30px;
-    font-size: 20px;
-  }
-
-  @media (max-width: 500px) {
-    width: 25px;
-    height: 25px;
-    font-size: 16px;
-  }
-
-  @media (max-width: 375px) {
-    width: 23px;
-    height: 23px;
-    font-size: 15px;
-  }
-
-  @media (max-width: 350px) {
-    width: 21px;
-    height: 21px;
-    font-size: 14px;
-  }
-
-  @media (max-width: 325px) {
-    width: 19px;
-    height: 19px;
-    font-size: 13px;
-  }
 }
 
 .filters {
@@ -98,18 +95,18 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    margin-bottom: 25px;
+    margin-bottom: 1.5625em;
   }
 
   .number {
     display: flex;
     justify-content: center;
     align-items: center;
-    margin-bottom: 10px;
+    margin-bottom: 0.625em;
 
     label {
-      font-size: 20px;
-      margin-right: 10px;
+      font-size: 1.25em;
+      margin-right: 0.5em;
     }
   }
 }
@@ -126,54 +123,32 @@
 
 textarea {
   font-family: 'SN Pro', sans-serif;
-  border-radius: 5px;
+  border-radius: 0.28em;
   border: 3px solid black;
-  padding: 6px;
-  font-size: 18px;
+  padding: 0.33em;
+  font-size: 1.125em;
   width: 90%;
   max-width: 1000px;
 
   @media (max-width: 500px) {
-    padding: 5px;
-    font-size: 15px;
-    border: 2px solid black;
-  }
-
-  @media (max-width: 400px) {
-    padding: 5px;
-    font-size: 13px;
+    border-width: 2px;
   }
 }
 
 .words-entered {
-  margin-top: 10px;
-  font-size: 16px;
-}
-
-label {
-  @media (max-width: 500px) {
-    font-size: 15px !important;
-  }
-
-  @media (max-width: 400px) {
-    font-size: 13px !important;
-  }
+  margin-top: 0.625em;
+  font-size: 1em;
 }
 
 select {
   font-family: 'SN Pro', sans-serif;
-  border-radius: 5px;
+  border-radius: 0.28em;
   border: 3px solid black;
-  width: 50px;
-  font-size: 18px;
+  width: 2.78em;
+  font-size: 1.125em;
 
   @media (max-width: 500px) {
-    font-size: 15px !important;
-    border: 2px solid black;
-  }
-
-  @media (max-width: 400px) {
-    font-size: 13px !important;
+    border-width: 2px;
   }
 }
 
@@ -183,7 +158,7 @@ input {
 
 .generate {
   text-align: center;
-  margin-top: 20px;
+  margin-top: 1.25em;
 
   button {
     @include button;
@@ -197,34 +172,18 @@ input {
 .timer,
 .best-placed {
   text-align: center;
-  font-size: 16px;
-  margin-top: 20px;
-
-  @media (max-width: 500px) {
-    font-size: 15px !important;
-  }
-
-  @media (max-width: 400px) {
-    font-size: 13px !important;
-  }
+  font-size: 1em;
+  margin-top: 1.25em;
 }
 
 .best-placed {
-  margin-top: 8px;
+  margin-top: 0.5em;
 }
 
 .no-results {
   text-align: center;
-  font-size: 25px;
-  margin-top: 20px;
-
-  @media (max-width: 500px) {
-    font-size: 20px !important;
-  }
-
-  @media (max-width: 400px) {
-    font-size: 18px !important;
-  }
+  font-size: 1.5625em;
+  margin-top: 0.8em;
 }
 
 .results-container {
@@ -256,45 +215,36 @@ input {
   height: var(--tile);
   margin: calc(var(--cell) * 0.045);
   background-color: #ffffff;
-  border-radius: clamp(1px, var(--tile) * 0.15, 4px);
+  border-radius: calc(var(--tile) / 15);
   display: flex;
   align-items: center;
   justify-content: center;
-  // 30px at full size; proportionally larger on small tiles so letters stay legible.
-  font-size: min(var(--tile) * 0.4 + 6px, var(--tile) * 0.85);
+  // Same proportions as the full-size 60px tile: 30px letters, 4px corners.
+  font-size: calc(var(--tile) * 0.5);
   font-weight: bold;
   color: black;
 }
 
 .grid-size {
   text-align: center;
-  font-size: 18px;
-  margin-bottom: 10px;
+  font-size: 1.125em;
+  margin-bottom: 0.55em;
 }
 
 .board-actions {
   display: flex;
   justify-content: center;
-  gap: 8px;
-  margin-bottom: 12px;
+  gap: 0.5em;
+  margin-bottom: 0.75em;
 }
 
 .board-button {
   @include button;
 
   & {
-    padding: 6px 10px;
+    font-size: 0.875em;
+    padding: 0.43em 0.71em;
     border-width: 2px;
-    font-size: 14px;
-  }
-
-  @media (max-width: 500px) {
-    font-size: 13px !important;
-    padding: 5px 8px;
-  }
-
-  @media (max-width: 400px) {
-    font-size: 12px !important;
   }
 }
 
