@@ -297,7 +297,7 @@ function algorithm(filter: IFilter): string[][][] {
     wordsLeft[index] = wordId;
   }
 
-  // The most words placed on the board in any state so far, reported to the page whenever it increases
+  // The most words placed on the board in any state so far, reported to the page with that board whenever it increases
   let bestPlaced = 1;
 
   function search(wordsLeft: number[], wordsHashHi: number, wordsHashLo: number) {
@@ -306,7 +306,7 @@ function algorithm(filter: IFilter): string[][][] {
     const placed = words.length - wordsLeft.length;
     if (placed > bestPlaced) {
       bestPlaced = placed;
-      send({ type: 'progress', placed, total: words.length });
+      send({ type: 'progress', placed, total: words.length, board: boardToMatrix() });
     }
 
     // Checks if the current state has already been fully explored and returns if so
@@ -384,7 +384,7 @@ function algorithm(filter: IFilter): string[][][] {
   for (let i = 0; i < firstWord.length; i++) {
     setCell(0, i, firstWord.charCodeAt(i));
   }
-  send({ type: 'progress', placed: 1, total: words.length });
+  send({ type: 'progress', placed: 1, total: words.length, board: boardToMatrix() });
 
   // Search with every word except the first remaining, by index
   const remaining = words.map((_, i) => i).slice(1);

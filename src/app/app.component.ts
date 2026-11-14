@@ -23,6 +23,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
   public bestPlaced = 0;
   public totalWords = 0;
+  private bestBoard?: string[][];
 
   public elapsedTime = 0;
   private timerId?: number;
@@ -45,6 +46,7 @@ export class AppComponent implements OnInit, OnDestroy {
     this.results = [];
     this.bestPlaced = 0;
     this.totalWords = 0;
+    this.bestBoard = undefined;
 
     this.startTime = performance.now();
 
@@ -61,6 +63,11 @@ export class AppComponent implements OnInit, OnDestroy {
     this.clearTimer();
     this.loading = false;
     this.initWorker();
+
+    // Shows the board with the most words placed so far
+    if (this.bestBoard) {
+      this.results = [this.bestBoard];
+    }
   }
 
   public toggleMirror(index: number): void {
@@ -74,6 +81,7 @@ export class AppComponent implements OnInit, OnDestroy {
       if (data.type === 'progress') {
         this.bestPlaced = data.placed;
         this.totalWords = data.total;
+        this.bestBoard = data.board;
         return;
       }
 
