@@ -270,7 +270,19 @@ input {
 
   & {
     display: block;
-    margin: 12px auto 0;
+    margin: 0 auto 12px;
+    padding: 6px 10px;
+    border-width: 2px;
+    font-size: 14px;
+  }
+
+  @media (max-width: 500px) {
+    font-size: 13px !important;
+    padding: 5px 8px;
+  }
+
+  @media (max-width: 400px) {
+    font-size: 12px !important;
   }
 }
 

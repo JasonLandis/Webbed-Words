@@ -69,6 +69,7 @@
           </svg>
         }
       </div>
+      <button class="toggle-mirror" (click)="toggleMirror()">Toggle mirror</button>
       <div class="result">
         @for (row of result; track $index) {
           <div class="row">
@@ -87,7 +88,6 @@
           </div>
         }
       </div>
-      <button class="toggle-mirror" (click)="toggleMirror()">Toggle mirror</button>
     </div>
   }
 </div>
