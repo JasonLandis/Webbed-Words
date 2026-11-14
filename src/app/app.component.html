@@ -17,14 +17,6 @@
     </select>
   </div>
   <div class="number">
-    <label for="max-results">Max number of solutions</label>
-    <select id="max-results" [(ngModel)]="filter.maxResults">
-      @for (item of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]; track $index) {
-        <option [value]="item">{{ item }}</option>
-      }
-    </select>
-  </div>
-  <div class="number">
     <label for="shuffle-words">
       Shuffle Words
       <svg class="info-icon" viewBox="0 0 16 16" role="img">
@@ -60,15 +52,15 @@
     </div>
   }
 }
-@if (results.length === 0 && !loading && attempted) {
+@if (!result && !loading && attempted) {
   <div class="no-results">No results found</div>
 }
 <div class="results-container">
-  @for (result of results; track $index; let i = $index) {
+  @if (result) {
     <div>
       <div class="grid-size">
         {{ result.length }} x {{ result[0].length }}
-        @if (i === 0 && leftOutWords.length > 0) {
+        @if (leftOutWords.length > 0) {
           <svg class="info-icon" viewBox="0 0 16 16" role="img">
             <title>Words left out: {{ leftOutWords.join(', ') }}</title>
             <circle cx="8" cy="8" r="7" fill="none" stroke="currentColor" stroke-width="1.5" />
@@ -95,7 +87,7 @@
           </div>
         }
       </div>
-      <button class="toggle-mirror" (click)="toggleMirror(i)">Toggle mirror</button>
+      <button class="toggle-mirror" (click)="toggleMirror()">Toggle mirror</button>
     </div>
   }
 </div>

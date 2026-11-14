@@ -12,11 +12,10 @@ export class AppComponent implements OnInit, OnDestroy {
   public filter: IFilter = {
     words: 'enter, your, own, list, of, comma, separated, words, here, and, hit, generate',
     maxSize: 15,
-    maxResults: 1,
     shuffleWords: true,
   };
 
-  public results: string[][][] = [];
+  public result: string[][] | null = null;
 
   public loading = false;
   public attempted = false;
@@ -45,7 +44,7 @@ export class AppComponent implements OnInit, OnDestroy {
   public generate(): void {
     this.attempted = true;
     this.loading = true;
-    this.results = [];
+    this.result = null;
     this.bestPlaced = 0;
     this.totalWords = 0;
     this.bestBoard = undefined;
@@ -70,13 +69,15 @@ export class AppComponent implements OnInit, OnDestroy {
 
     // Shows the board with the most words placed so far
     if (this.bestBoard) {
-      this.results = [this.bestBoard];
+      this.result = this.bestBoard;
       this.leftOutWords = this.bestLeftOut;
     }
   }
 
-  public toggleMirror(index: number): void {
-    this.results[index] = this.results[index][0].map((_, colIndex) => this.results[index].map(row => row[colIndex]));
+  public toggleMirror(): void {
+    const board = this.result;
+    if (!board) return;
+    this.result = board[0].map((_, colIndex) => board.map(row => row[colIndex]));
   }
 
   private initWorker(): void {
@@ -91,7 +92,7 @@ export class AppComponent implements OnInit, OnDestroy {
         return;
       }
 
-      this.results = data.results;
+      this.result = data.result;
       this.clearTimer();
       this.elapsedTime = performance.now() - this.startTime;
       this.loading = false;
