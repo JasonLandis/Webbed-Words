@@ -2,15 +2,15 @@
 import { IFilter, IWorkerMessage } from './app.model';
 
 addEventListener('message', ({ data }) => {
-  const results = algorithm(data);
-  send({ type: 'done', results });
+  const result = algorithm(data);
+  send({ type: 'done', result });
 });
 
 function send(message: IWorkerMessage): void {
   postMessage(message);
 }
 
-function algorithm(filter: IFilter): string[][][] {
+function algorithm(filter: IFilter): string[][] | null {
   const words = filter.words
     .split(',')
     .map(word => word.trim())
@@ -19,7 +19,7 @@ function algorithm(filter: IFilter): string[][][] {
     .sort((a, b) => b.length - a.length);
 
   // Returns if there are no words once blank entries are removed, such as for an input of only commas or spaces
-  if (words.length === 0) return [];
+  if (words.length === 0) return null;
 
   // Shuffles the words with a Fisher-Yates shuffle so every order is equally likely
   if (filter.shuffleWords) {
@@ -36,7 +36,7 @@ function algorithm(filter: IFilter): string[][][] {
   const offset = Math.max(maxSize, words[0].length) + maxWordLength + 2;
   const side = offset * 2 + 1;
   const board = new Uint16Array(side * side);
-  const results: string[][][] = [];
+  let solution: string[][] | null = null; // The first board found that uses every word
 
   let currentBounds = { minRow: 0, maxRow: 0, minCol: 0, maxCol: words[0].length - 1 }; // Tracks the bounds of the board throughout the algorithm
   const exploredStates = new Set<string>(); // Tracks states (board plus remaining words) that have been fully explored, including recorded solutions
@@ -297,27 +297,25 @@ function algorithm(filter: IFilter): string[][][] {
     wordsLeft[index] = wordId;
   }
 
-  // The most words placed on the board in any state so far, reported to the page whenever it increases
+  // The most words placed on the board in any state so far, reported to the page with that board whenever it increases
   let bestPlaced = 1;
 
   function search(wordsLeft: number[], wordsHashHi: number, wordsHashLo: number) {
-    if (results.length >= filter.maxResults) return;
+    if (solution) return;
 
     const placed = words.length - wordsLeft.length;
     if (placed > bestPlaced) {
       bestPlaced = placed;
-      send({ type: 'progress', placed, total: words.length });
+      send({ type: 'progress', placed, total: words.length, board: boardToMatrix(), leftOut: wordsLeft.map(id => words[id]) });
     }
 
     // Checks if the current state has already been fully explored and returns if so
     const stateKey = `${boardHashHi ^ wordsHashHi}:${boardHashLo ^ wordsHashLo}`;
     if (exploredStates.has(stateKey)) return;
 
-    // If all of the words have been used, push the solution to the results
-    // The words hash is 0 here, so the state key identifies the board alone and repeated solutions are caught by the check above
+    // If all of the words have been used, records the solution, which ends the search
     if (wordsLeft.length === 0) {
-      exploredStates.add(stateKey);
-      results.push(boardToMatrix());
+      solution = boardToMatrix();
       return;
     }
 
@@ -369,13 +367,13 @@ function algorithm(filter: IFilter): string[][][] {
             currentBounds.minCol = minCol;
             currentBounds.maxCol = maxCol;
 
-            if (results.length >= filter.maxResults) return;
+            if (solution) return;
           }
         }
       }
     }
 
-    // Records that the current state has been fully explored, so any solutions it leads to are already in the results
+    // Records that the current state has been fully explored and leads to no solution
     exploredStates.add(stateKey);
   }
 
@@ -384,7 +382,7 @@ function algorithm(filter: IFilter): string[][][] {
   for (let i = 0; i < firstWord.length; i++) {
     setCell(0, i, firstWord.charCodeAt(i));
   }
-  send({ type: 'progress', placed: 1, total: words.length });
+  send({ type: 'progress', placed: 1, total: words.length, board: boardToMatrix(), leftOut: words.slice(1) });
 
   // Search with every word except the first remaining, by index
   const remaining = words.map((_, i) => i).slice(1);
@@ -397,5 +395,5 @@ function algorithm(filter: IFilter): string[][][] {
 
   search(remaining, remainingHashHi, remainingHashLo);
 
-  return results;
+  return solution;
 }

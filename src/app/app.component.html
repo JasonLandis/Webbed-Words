@@ -17,15 +17,18 @@
     </select>
   </div>
   <div class="number">
-    <label for="max-results">Max number of solutions</label>
-    <select id="max-results" [(ngModel)]="filter.maxResults">
-      @for (item of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]; track $index) {
-        <option [value]="item">{{ item }}</option>
-      }
-    </select>
-  </div>
-  <div class="number">
-    <label for="shuffle-words">Shuffle Words</label>
+    <label for="shuffle-words">
+      Shuffle Words
+      <svg class="info-icon" viewBox="0 0 16 16" role="img">
+        <title>Off: words are sorted longest to shortest. This is fastest for long word lists, but gives the
+          same boards every time. On: words are sorted in a random order. This can be slower for long
+          word lists, but gives different boards each time you generate.
+        </title>
+        <circle cx="8" cy="8" r="7" fill="none" stroke="currentColor" stroke-width="1.5" />
+        <circle cx="8" cy="4.75" r="1" fill="currentColor" />
+        <path d="M8 7v5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+      </svg>
+    </label>
     <input id="shuffle-words" type="checkbox" [(ngModel)]="filter.shuffleWords" />
   </div>
 </div>
@@ -35,35 +38,50 @@
 @if (attempted) {
   <div class="timer">Elapsed time: {{ (elapsedTime / 1000).toFixed(2) }}s</div>
   @if (totalWords > 0) {
-    <div class="best-placed">Most words placed: {{ bestPlaced }}/{{ totalWords }}</div>
+    <div class="best-placed">
+      Most words placed: {{ bestPlaced }}/{{ totalWords }}
+      <svg class="info-icon" viewBox="0 0 16 16" role="img">
+        <title>The most words fit onto a single board so far. It updates live while the search runs, so you
+          can see how close it is to placing every word. This gives you an idea on if there exists a solution 
+          given the list of words you entered.
+        </title>
+        <circle cx="8" cy="8" r="7" fill="none" stroke="currentColor" stroke-width="1.5" />
+        <circle cx="8" cy="4.75" r="1" fill="currentColor" />
+        <path d="M8 7v5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+      </svg>
+    </div>
   }
 }
-@if (results.length === 0 && !loading && attempted) {
+@if (!result && !loading && attempted) {
   <div class="no-results">No results found</div>
 }
 <div class="results-container">
-  @for (result of results; track $index; let i = $index) {
+  @if (result) {
     <div>
-      <div class="grid-size">{{ result.length }} x {{ result[0].length }}</div>
-      <div class="result">
+      <div class="grid-size">
+        {{ result.length }} x {{ result[0].length }}
+        @if (leftOutWords.length > 0) {
+          <svg class="info-icon" viewBox="0 0 16 16" role="img">
+            <title>Words left out: {{ leftOutWords.join(', ') }}</title>
+            <circle cx="8" cy="8" r="7" fill="none" stroke="currentColor" stroke-width="1.5" />
+            <circle cx="8" cy="4.75" r="1" fill="currentColor" />
+            <path d="M8 7v5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+          </svg>
+        }
+      </div>
+      <div class="board-actions">
+        <button class="board-button" (click)="toggleMirror()">Toggle mirror</button>
+        <button class="board-button" (click)="exportPng()">Export PNG</button>
+      </div>
+      <div class="result" [style.--cols]="result[0].length">
         @for (row of result; track $index) {
           <div class="row">
             @for (letter of row; track $index) {
-              <div
-                class="tile"
-                [class.t-xxlarge]="row.length >= 26"
-                [class.t-xlarge]="row.length >= 21 && row.length <= 25"
-                [class.t-large]="row.length >= 16 && row.length <= 20"
-                [class.t-medium]="row.length >= 11 && row.length <= 15"
-                [class.t-small]="row.length >= 6 && row.length <= 10"
-                [class.t-xsmall]="row.length <= 5">
-                {{ letter }}
-              </div>
+              <div class="tile">{{ letter }}</div>
             }
           </div>
         }
       </div>
-      <button class="toggle-mirror" (click)="toggleMirror(i)">Toggle mirror</button>
     </div>
   }
 </div>
