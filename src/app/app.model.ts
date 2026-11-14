@@ -10,6 +10,7 @@ export type IWorkerMessage = {
   placed: number; 
   total: number;
   board: string[][];
+  leftOut: string[];
 } | { 
   type: 'done'; 
   results: string[][][] 

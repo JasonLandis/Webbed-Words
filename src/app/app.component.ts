@@ -24,6 +24,8 @@ export class AppComponent implements OnInit, OnDestroy {
   public bestPlaced = 0;
   public totalWords = 0;
   private bestBoard?: string[][];
+  private bestLeftOut: string[] = [];
+  public leftOutWords: string[] = []; // Words missing from the shown board after a cancel
 
   public elapsedTime = 0;
   private timerId?: number;
@@ -47,6 +49,8 @@ export class AppComponent implements OnInit, OnDestroy {
     this.bestPlaced = 0;
     this.totalWords = 0;
     this.bestBoard = undefined;
+    this.bestLeftOut = [];
+    this.leftOutWords = [];
 
     this.startTime = performance.now();
 
@@ -67,6 +71,7 @@ export class AppComponent implements OnInit, OnDestroy {
     // Shows the board with the most words placed so far
     if (this.bestBoard) {
       this.results = [this.bestBoard];
+      this.leftOutWords = this.bestLeftOut;
     }
   }
 
@@ -82,6 +87,7 @@ export class AppComponent implements OnInit, OnDestroy {
         this.bestPlaced = data.placed;
         this.totalWords = data.total;
         this.bestBoard = data.board;
+        this.bestLeftOut = data.leftOut;
         return;
       }
 

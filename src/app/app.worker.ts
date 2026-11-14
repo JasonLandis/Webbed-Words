@@ -306,7 +306,7 @@ function algorithm(filter: IFilter): string[][][] {
     const placed = words.length - wordsLeft.length;
     if (placed > bestPlaced) {
       bestPlaced = placed;
-      send({ type: 'progress', placed, total: words.length, board: boardToMatrix() });
+      send({ type: 'progress', placed, total: words.length, board: boardToMatrix(), leftOut: wordsLeft.map(id => words[id]) });
     }
 
     // Checks if the current state has already been fully explored and returns if so
@@ -384,7 +384,7 @@ function algorithm(filter: IFilter): string[][][] {
   for (let i = 0; i < firstWord.length; i++) {
     setCell(0, i, firstWord.charCodeAt(i));
   }
-  send({ type: 'progress', placed: 1, total: words.length, board: boardToMatrix() });
+  send({ type: 'progress', placed: 1, total: words.length, board: boardToMatrix(), leftOut: words.slice(1) });
 
   // Search with every word except the first remaining, by index
   const remaining = words.map((_, i) => i).slice(1);
