@@ -111,6 +111,16 @@
       font-size: 20px;
       margin-right: 10px;
     }
+
+    .info-icon {
+      width: 0.8em;
+      height: 0.8em;
+      margin-left: 4px;
+      vertical-align: middle;
+      opacity: 0.8;
+      cursor: help;
+      pointer-events: all;
+    }
   }
 }
 

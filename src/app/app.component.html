@@ -25,7 +25,18 @@
     </select>
   </div>
   <div class="number">
-    <label for="shuffle-words">Shuffle Words</label>
+    <label for="shuffle-words">
+      Shuffle Words
+      <svg class="info-icon" viewBox="0 0 16 16" role="img">
+        <title>Off: words are sorted longest to shortest. This is fastest for long word lists, but gives the
+          same boards every time. On: words are sorted in a random order. This can be slower for long
+          word lists, but gives different boards each time you generate.
+        </title>
+        <circle cx="8" cy="8" r="7" fill="none" stroke="currentColor" stroke-width="1.5" />
+        <circle cx="8" cy="4.75" r="1" fill="currentColor" />
+        <path d="M8 7v5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+      </svg>
+    </label>
     <input id="shuffle-words" type="checkbox" [(ngModel)]="filter.shuffleWords" />
   </div>
 </div>
