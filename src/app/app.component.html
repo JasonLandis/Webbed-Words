@@ -77,7 +77,7 @@
         @for (row of result; track $index) {
           <div class="row">
             @for (letter of row; track $index) {
-              <div class="tile">{{ letter }}</div>
+              <div class="tile" [class.no-letter]="letter === ' '">{{ letter }}</div>
             }
           </div>
         }
